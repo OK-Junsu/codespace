@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:
+# support.misolves.com/codespace:0.0.2
 
 # 1. Base Image: ubuntu-slim은 "ubuntu"의 경량 버전입니다.
 FROM ubuntu:jammy-20251013
@@ -8,6 +8,9 @@ FROM ubuntu:jammy-20251013
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y openssh-server \
+    # SSH 데몬이 필요한 디렉토리 수동 생성 및 권한 설정
+    && mkdir -p /run/sshd \
+    && chmod 0755 /run/sshd \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. Create SSH User
