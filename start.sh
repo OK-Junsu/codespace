@@ -30,28 +30,26 @@ if [ ! -d "$ABC_HOME/.claude" ]; then
     cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
 fi
 
-# 1.4. [핵심 수정] Claude 바이너리 및 엔진 복구
-# 실제 claude 실행 파일이 있는지 확인합니다.
-CLAUDE_REAL_BIN=$(find "$ABC_HOME/.local/share/claude" -name "claude" -type f 2>/dev/null | head -n 1)
+# 1.4. [수정됨] Claude 바이너리 검증 및 복구
+# 파일 이름이 'claude'가 아니어도(예: 2.0.55), versions 안에 파일이 있으면 설치된 것으로 간주
+CLAUDE_REAL_BIN=$(find "$ABC_HOME/.local/share/claude/versions" -type f 2>/dev/null | sort -V | tail -n 1)
 
 if [ -z "$CLAUDE_REAL_BIN" ]; then
     echo "Claude binary missing or incomplete. Re-installing from skeleton..."
     
-    # [중요] 불완전한 기존 디렉토리가 있다면 삭제하여 깨끗한 복사를 보장합니다.
     if [ -d "$ABC_HOME/.local" ]; then
         echo "Removing incomplete .local directory..."
         rm -rf "$ABC_HOME/.local"
     fi
     
     mkdir -p "$ABC_HOME/.local"
-    # 스켈레톤에서 전체 복사
     echo "Copying fresh .local directory..."
     cp -a "$SKEL_DIR/.local/"* "$ABC_HOME/.local/"
 else
     echo "Claude binary verification successful: $CLAUDE_REAL_BIN"
 fi
 
-# 1.5. 소유권 설정 (필수)
+# 1.5. 소유권 설정
 echo "Setting full ownership for $ABC_HOME to abc:abc"
 chown -R abc:abc "$ABC_HOME"
 
