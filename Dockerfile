@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.14
+# support.misolves.com/codespace:0.0.15
 
 # 1. Base Image
 FROM ubuntu:jammy-20251013
@@ -36,21 +36,23 @@ RUN cp /etc/skel/.bashrc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.profile
 
-# 8-1. Add PATH to .profile (For SSH/Login Shells) [필수]
-# start.sh가 이 파일을 복사하면 abc 사용자가 로그인하자마자 claude를 인식합니다.
+# [수정됨] 8-1. Add PATH to .bashrc AND .profile
+# SSH 접속(.profile)과 code-server 터미널(.bashrc) 모두를 위해 두 파일에 설정을 추가합니다.
 RUN echo '' >> /usr/local/etc/skel_abc/.profile \
-    && echo '# Add /usr/local/bin to PATH for Claude' >> /usr/local/etc/skel_abc/.profile \
-    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.profile
+    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.profile \
+    && echo '' >> /usr/local/etc/skel_abc/.bashrc \
+    && echo '# Add /usr/local/bin to PATH for Claude' >> /usr/local/etc/skel_abc/.bashrc \
+    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.bashrc
 
 # 9. Configure SSH
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# 10. Install Claude Code & Move Binary
-# 설치 후 실행 파일만 시스템 경로로 이동 (설정 파일 복사는 삭제)
+# 10. Install Claude Code & Move Binary (권한 수정 핵심 단계)
+# chmod 755를 사용하여 abc 사용자도 읽고 실행할 수 있도록 설정합니다.
 RUN curl -fsSL https://claude.ai/install.sh | bash \
     && mv /root/.local/bin/claude /usr/local/bin/claude \
-    && chmod +x /usr/local/bin/claude
+    && chmod 755 /usr/local/bin/claude
 
 # 11. Expose Ports
 EXPOSE 22 8080
