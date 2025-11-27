@@ -38,7 +38,22 @@ if [ ! -f "$CODE_CONFIG_DIR/config.yaml" ]; then
     fi
 fi
 
-# 1.3. 전체 홈 디렉토리 소유권 설정 (필수):
+# 1.3. Claude 설정 파일 복사: .claude 디렉토리 및 JSON 파일 복사
+if [ ! -d "$ABC_HOME/.claude" ]; then
+    echo "Claude config directory (.claude) not found. Copying from skeleton."
+    # -a 옵션을 사용하여 내용과 권한을 유지하며 복사 (디렉토리 통째로)
+    cp -a "$SKEL_DIR/.claude" "$ABC_HOME/"
+    cp -a "$SKEL_DIR/.claude.json" "$ABC_HOME/"
+    cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
+    
+    if [ -d "$ABC_HOME/.claude" ]; then
+        echo "SUCCESS: Claude files copied."
+    else
+        echo "FAILURE: Claude files NOT copied."
+    fi
+fi
+
+# 1.4. 전체 홈 디렉토리 소유권 설정 (필수):
 echo "Setting full ownership for $ABC_HOME to abc:abc"
 chown -R abc:abc "$ABC_HOME"
 
