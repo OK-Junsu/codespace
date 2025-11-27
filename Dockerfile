@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.9
+# support.misolves.com/codespace:0.0.10
 
 # 1. Base Image
 FROM ubuntu:jammy-20251013
@@ -25,17 +25,23 @@ RUN curl -fsSL https://code-server.dev/install.sh | sh
 # 마운트의 영향을 받지 않는 안전한 경로에 필수 설정 파일을 복사합니다.
 
 # 6. Create Staging Directory
-# '/usr/local/etc/skel_abc'는 바인드 마운트와 무관하게 이미지에 보존됩니다.
-RUN mkdir -p /usr/local/etc/skel_abc/.config/code-server
+RUN mkdir -p /usr/local/etc/skel_abc/.config/code-server \
+    # Staging 디렉토리가 abc 사용자의 설정을 담고 있음을 명시하기 위해 권한 설정
+    && chown -R abc:abc /usr/local/etc/skel_abc
 
 # 7. Create code-server config file in STAGING
+# 주의: 이 파일은 root가 생성하므로, 나중에 start.sh에서 복사할 때 소유권 처리가 필수임.
 RUN echo "auth: password" > /usr/local/etc/skel_abc/.config/code-server/config.yaml \
-    && echo "password: your_password" >> /usr/local/etc/skel_abc/.config/code-server/config.yaml
+    && echo "password: your_password" >> /usr/local/etc/skel_abc/.config/code-server/config.yaml \
+    # 스테이징 파일 자체의 소유권을 abc로 설정
+    && chown abc:abc /usr/local/etc/skel_abc/.config/code-server/config.yaml
 
 # 8. Copy essential shell configs to STAGING
-# useradd 시 복사되는 기본 쉘 파일들을 Staging Directory에 복사합니다.
+# /etc/skel 파일도 root 소유이므로, 복사 후 소유권을 abc로 변경합니다.
 RUN cp /etc/skel/.bashrc /usr/local/etc/skel_abc/.bashrc \
-    && cp /etc/skel/.profile /usr/local/etc/skel_abc/.profile
+    && cp /etc/skel/.profile /usr/local/etc/skel_abc/.profile \
+    && chown abc:abc /usr/local/etc/skel_abc/.bashrc \
+    && chown abc:abc /usr/local/etc/skel_abc/.profile
 
 # --- 기존 SSH/Claude 설정 ---
 
