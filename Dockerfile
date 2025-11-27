@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.11
+# support.misolves.com/codespace:0.0.12
 
 # 1. Base Image
 FROM ubuntu:jammy-20251013
@@ -37,11 +37,19 @@ RUN echo "auth: password" > /usr/local/etc/skel_abc/.config/code-server/config.y
     && chown abc:abc /usr/local/etc/skel_abc/.config/code-server/config.yaml
 
 # 8. Copy essential shell configs to STAGING
-# /etc/skel 파일도 root 소유이므로, 복사 후 소유권을 abc로 변경합니다.
+# /etc/skel 파일들을 Staging Directory에 복사합니다.
 RUN cp /etc/skel/.bashrc /usr/local/etc/skel_abc/.bashrc \
     && cp /etc/skel/.profile /usr/local/etc/skel_abc/.profile \
     && chown abc:abc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.profile
+
+# 8-1. 🚀 Claude 실행을 위한 PATH 추가 (필수)
+# Staging .bashrc 파일에 /usr/local/bin 경로를 강제로 추가합니다.
+# 이렇게 하면 start.sh가 이 파일을 복사할 때 abc 사용자가 바로 claude를 사용할 수 있습니다.
+RUN echo '' >> /usr/local/etc/skel_abc/.bashrc \
+    && echo '# Claude and system binaries path' >> /usr/local/etc/skel_abc/.bashrc \
+    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.bashrc \
+    && chown abc:abc /usr/local/etc/skel_abc/.bashrc
 
 # --- 기존 SSH/Claude 설정 ---
 
