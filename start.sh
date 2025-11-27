@@ -8,9 +8,9 @@ CODE_CONFIG_DIR="$ABC_HOME/.config/code-server"
 
 echo "Checking essential configurations..."
 
-# 1.1. 쉘 초기화 파일 복사 (.profile에 PATH 설정이 포함됨)
-if [ ! -f "$ABC_HOME/.profile" ]; then
-    echo "Shell configuration not found. Copying from skeleton."
+# 1.1. 쉘 초기화 파일 복사
+if [ ! -f "$ABC_HOME/.profile" ] || [ ! -f "$ABC_HOME/.bashrc" ]; then
+    echo "Shell configuration missing. Copying from skeleton."
     cp -a "$SKEL_DIR/.bashrc" "$ABC_HOME/"
     cp -a "$SKEL_DIR/.profile" "$ABC_HOME/"
 fi
@@ -22,9 +22,17 @@ if [ ! -f "$CODE_CONFIG_DIR/config.yaml" ]; then
     cp -a "$SKEL_DIR/.config/code-server/config.yaml" "$CODE_CONFIG_DIR/"
 fi
 
-# 1.3. (삭제됨) Claude 설정 파일 복사는 불필요하므로 제거했습니다.
+# 1.3. [활성화됨] Claude 설정 파일 복사
+# 이제 Dockerfile에서 파일들이 skel_abc로 정상적으로 옮겨졌으므로 복사를 수행합니다.
+if [ ! -d "$ABC_HOME/.claude" ]; then
+    echo "Claude config directory (.claude) not found. Copying from skeleton."
+    # -a 옵션을 사용하여 내용과 권한을 유지하며 복사
+    cp -a "$SKEL_DIR/.claude" "$ABC_HOME/"
+    cp -a "$SKEL_DIR/.claude.json" "$ABC_HOME/"
+    cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
+fi
 
-# 1.4. 소유권 설정 (가장 중요)
+# 1.4. 소유권 설정 (필수)
 echo "Setting full ownership for $ABC_HOME to abc:abc"
 chown -R abc:abc "$ABC_HOME"
 
