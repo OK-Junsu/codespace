@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.17
+# support.misolves.com/codespace:0.0.18
 
 # 1. Base Image
 FROM ubuntu:jammy-20251013
@@ -38,7 +38,7 @@ RUN cp /etc/skel/.bashrc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.profile
 
-# 8-1. [수정됨] Add User Local PATH to .bashrc AND .profile
+# 8-1. Add User Local PATH to .bashrc AND .profile
 # $HOME/.local/bin 경로를 PATH에 추가합니다.
 RUN echo '' >> /usr/local/etc/skel_abc/.profile \
     && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /usr/local/etc/skel_abc/.profile \
@@ -49,15 +49,32 @@ RUN echo '' >> /usr/local/etc/skel_abc/.profile \
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# 10. Install Claude Code & Move to User Staging (핵심 수정)
+# 10. Install Claude Code & Setup (Dangling Symlink 해결 버전)
 # 1) 설치 스크립트 실행
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# 2) [수정됨] 바이너리를 사용자의 .local/bin 스테이징 영역으로 이동
-RUN mv /root/.local/bin/claude /usr/local/etc/skel_abc/.local/bin/claude \
+# 2) 디렉토리 구조 생성
+RUN mkdir -p /usr/local/etc/skel_abc/.local/bin \
+    && mkdir -p /usr/local/etc/skel_abc/.local/share
+
+# 3) [핵심] 엔진(share) 이동 및 권한 설정
+# 심볼릭 링크가 가리키는 '진짜 파일'들은 여기에 있습니다.
+# 폴더 전체에 755 권한을 주어 abc 사용자가 읽고 실행할 수 있게 합니다.
+RUN mv /root/.local/share/claude /usr/local/etc/skel_abc/.local/share/claude \
+    && chmod -R 755 /usr/local/etc/skel_abc/.local/share/claude
+
+# 4) [핵심] 깨진 심볼릭 링크 대신 '래퍼 스크립트' 생성
+# 기존 /root/.local/bin/claude는 링크가 깨지므로 사용하지 않습니다.
+# 대신 버전에 상관없이 실행 파일을 찾아 실행하는 스크립트를 만듭니다.
+# 주의: 경로는 나중에 start.sh가 복사할 최종 경로(/home/abc/...)를 바라보게 합니다.
+RUN echo '#!/bin/sh' > /usr/local/etc/skel_abc/.local/bin/claude \
+    && echo 'exec "/home/abc/.local/share/claude/versions/"*"/claude" "$@"' >> /usr/local/etc/skel_abc/.local/bin/claude \
     && chmod 755 /usr/local/etc/skel_abc/.local/bin/claude
 
-# 3) 설정 파일들을 Staging으로 이동
+# 5) 시스템 전역 접근을 위한 심볼릭 링크 (root 등 사용 가능)
+RUN ln -s /home/abc/.local/bin/claude /usr/local/bin/claude
+
+# 6) 설정 파일 이동
 RUN cp -r /root/.claude /usr/local/etc/skel_abc/ \
     && cp /root/.claude.json /usr/local/etc/skel_abc/ \
     && cp /root/.claude.json.backup /usr/local/etc/skel_abc/ \

@@ -30,13 +30,13 @@ if [ ! -d "$ABC_HOME/.claude" ]; then
     cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
 fi
 
-# 1.4. [추가됨] Claude 바이너리 복사 (.local 디렉토리)
-# 바인드 마운트 시 /home/abc/.local/bin/claude가 사라지므로 복사해야 합니다.
-if [ ! -f "$ABC_HOME/.local/bin/claude" ]; then
-    echo "Claude binary not found in home. Copying .local from skeleton."
-    mkdir -p "$ABC_HOME/.local/bin"
-    # -n: 기존 파일 덮어쓰지 않음 (선택 사항)
-    cp -a "$SKEL_DIR/.local" "$ABC_HOME/"
+# 1.4. Claude 실행 환경(.local) 전체 복사
+# bin(런처)과 share(엔진)가 모두 .local 안에 있으므로 .local 전체를 복사하면 해결됨
+if [ ! -d "$ABC_HOME/.local/share/claude" ]; then
+    echo "Claude dependencies not found. Copying .local from skeleton."
+    mkdir -p "$ABC_HOME/.local"
+    # .local 디렉토리 내부를 병합하며 복사
+    cp -a "$SKEL_DIR/.local/"* "$ABC_HOME/.local/"
 fi
 
 # 1.5. 소유권 설정 (필수)
