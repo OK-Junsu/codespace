@@ -22,7 +22,7 @@ if [ ! -f "$CODE_CONFIG_DIR/config.yaml" ]; then
     cp -a "$SKEL_DIR/.config/code-server/config.yaml" "$CODE_CONFIG_DIR/"
 fi
 
-# 1.3. Claude 설정 파일 복사 (.claude 디렉토리 등)
+# 1.3. Claude 설정 파일 복사
 if [ ! -d "$ABC_HOME/.claude" ]; then
     echo "Claude config directory (.claude) not found. Copying from skeleton."
     cp -a "$SKEL_DIR/.claude" "$ABC_HOME/"
@@ -30,13 +30,25 @@ if [ ! -d "$ABC_HOME/.claude" ]; then
     cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
 fi
 
-# 1.4. Claude 실행 환경(.local) 전체 복사
-# bin(런처)과 share(엔진)가 모두 .local 안에 있으므로 .local 전체를 복사하면 해결됨
-if [ ! -d "$ABC_HOME/.local/share/claude" ]; then
-    echo "Claude dependencies not found. Copying .local from skeleton."
+# 1.4. [핵심 수정] Claude 바이너리 및 엔진 복구
+# 실제 claude 실행 파일이 있는지 확인합니다.
+CLAUDE_REAL_BIN=$(find "$ABC_HOME/.local/share/claude" -name "claude" -type f 2>/dev/null | head -n 1)
+
+if [ -z "$CLAUDE_REAL_BIN" ]; then
+    echo "Claude binary missing or incomplete. Re-installing from skeleton..."
+    
+    # [중요] 불완전한 기존 디렉토리가 있다면 삭제하여 깨끗한 복사를 보장합니다.
+    if [ -d "$ABC_HOME/.local" ]; then
+        echo "Removing incomplete .local directory..."
+        rm -rf "$ABC_HOME/.local"
+    fi
+    
     mkdir -p "$ABC_HOME/.local"
-    # .local 디렉토리 내부를 병합하며 복사
+    # 스켈레톤에서 전체 복사
+    echo "Copying fresh .local directory..."
     cp -a "$SKEL_DIR/.local/"* "$ABC_HOME/.local/"
+else
+    echo "Claude binary verification successful: $CLAUDE_REAL_BIN"
 fi
 
 # 1.5. 소유권 설정 (필수)
