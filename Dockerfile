@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.4
+# support.misolves.com/codespace:0.0.5
 
 # 1. Base Image: ubuntu-slim은 "ubuntu"의 경량 버전입니다.
 FROM ubuntu:jammy-20251013
@@ -11,13 +11,16 @@ RUN apt-get update \
     && chmod 0755 /run/sshd \
     && rm -rf /var/lib/apt/lists/*
 
-# --- code-server 설치 ---
-# 3. Install code-server
-RUN curl -fsSL https://code-server.dev/install.sh | sh
-
-# 4. Create SSH User (abc)
+# 3. Create SSH User (abc)
 RUN useradd -ms /bin/bash abc \
     && echo "abc:your_password" | chpasswd
+
+# 3-1. Grant Sudo Privileges to 'abc' user**
+RUN usermod -aG sudo abc
+
+# --- code-server 설치 ---
+# 4. Install code-server
+RUN curl -fsSL https://code-server.dev/install.sh | sh
 
 # 5. Configure code-server for the 'abc' user
 # code-server 설정을 위한 디렉토리 생성 및 권한 설정
