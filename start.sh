@@ -22,17 +22,24 @@ if [ ! -f "$CODE_CONFIG_DIR/config.yaml" ]; then
     cp -a "$SKEL_DIR/.config/code-server/config.yaml" "$CODE_CONFIG_DIR/"
 fi
 
-# 1.3. [활성화됨] Claude 설정 파일 복사
-# 이제 Dockerfile에서 파일들이 skel_abc로 정상적으로 옮겨졌으므로 복사를 수행합니다.
+# 1.3. Claude 설정 파일 복사 (.claude 디렉토리 등)
 if [ ! -d "$ABC_HOME/.claude" ]; then
     echo "Claude config directory (.claude) not found. Copying from skeleton."
-    # -a 옵션을 사용하여 내용과 권한을 유지하며 복사
     cp -a "$SKEL_DIR/.claude" "$ABC_HOME/"
     cp -a "$SKEL_DIR/.claude.json" "$ABC_HOME/"
     cp -a "$SKEL_DIR/.claude.json.backup" "$ABC_HOME/"
 fi
 
-# 1.4. 소유권 설정 (필수)
+# 1.4. [추가됨] Claude 바이너리 복사 (.local 디렉토리)
+# 바인드 마운트 시 /home/abc/.local/bin/claude가 사라지므로 복사해야 합니다.
+if [ ! -f "$ABC_HOME/.local/bin/claude" ]; then
+    echo "Claude binary not found in home. Copying .local from skeleton."
+    mkdir -p "$ABC_HOME/.local/bin"
+    # -n: 기존 파일 덮어쓰지 않음 (선택 사항)
+    cp -a "$SKEL_DIR/.local" "$ABC_HOME/"
+fi
+
+# 1.5. 소유권 설정 (필수)
 echo "Setting full ownership for $ABC_HOME to abc:abc"
 chown -R abc:abc "$ABC_HOME"
 

@@ -1,4 +1,4 @@
-# support.misolves.com/codespace:0.0.16
+# support.misolves.com/codespace:0.0.17
 
 # 1. Base Image
 FROM ubuntu:jammy-20251013
@@ -21,8 +21,10 @@ RUN usermod -aG sudo abc
 # 5. Install code-server
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
-# 6. Create Staging Directory
+# 6. Create Staging Directory Structure
+# .local/bin 디렉토리 구조를 미리 생성합니다.
 RUN mkdir -p /usr/local/etc/skel_abc/.config/code-server \
+    && mkdir -p /usr/local/etc/skel_abc/.local/bin \
     && chown -R abc:abc /usr/local/etc/skel_abc
 
 # 7. Create code-server config file in STAGING
@@ -36,26 +38,26 @@ RUN cp /etc/skel/.bashrc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.bashrc \
     && chown abc:abc /usr/local/etc/skel_abc/.profile
 
-# 8-1. Add PATH to BOTH .bashrc AND .profile
+# 8-1. [수정됨] Add User Local PATH to .bashrc AND .profile
+# $HOME/.local/bin 경로를 PATH에 추가합니다.
 RUN echo '' >> /usr/local/etc/skel_abc/.profile \
-    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.profile \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /usr/local/etc/skel_abc/.profile \
     && echo '' >> /usr/local/etc/skel_abc/.bashrc \
-    && echo 'export PATH="/usr/local/bin:$PATH"' >> /usr/local/etc/skel_abc/.bashrc
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /usr/local/etc/skel_abc/.bashrc
 
 # 9. Configure SSH
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config \
     && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# 10. Install Claude Code & Setup (핵심 변경 구간)
+# 10. Install Claude Code & Move to User Staging (핵심 수정)
 # 1) 설치 스크립트 실행
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# 2) 바이너리 이동 및 권한 설정 (755로 설정하여 abc 실행 가능하게 함)
-RUN mv /root/.local/bin/claude /usr/local/bin/claude \
-    && chmod 755 /usr/local/bin/claude
+# 2) [수정됨] 바이너리를 사용자의 .local/bin 스테이징 영역으로 이동
+RUN mv /root/.local/bin/claude /usr/local/etc/skel_abc/.local/bin/claude \
+    && chmod 755 /usr/local/etc/skel_abc/.local/bin/claude
 
-# 3) [복원됨] 생성된 설정 파일들을 Staging으로 이동
-# /root/.claude 등이 존재하는 것이 확인되었으므로 복사 진행
+# 3) 설정 파일들을 Staging으로 이동
 RUN cp -r /root/.claude /usr/local/etc/skel_abc/ \
     && cp /root/.claude.json /usr/local/etc/skel_abc/ \
     && cp /root/.claude.json.backup /usr/local/etc/skel_abc/ \
