@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: support.misolves.com/ok-junsu/codespace:0.0.23
+    container_name: codespace
+    ports:
+      - "2222:22"   # SSH 포트
+      - "8080:8080" # Code-Server 포트
+    environment:
+      - USER_PASSWORD=my_ssh_password     # 호스트 암호 변경
+      - CS_PASSWORD=my_cs_password        # 비워두면 암호 없이 접속
+      - WORKSPACE_DIR=/home/abc/workspace # 작업 경로 변경
+    volumes:
+      - ./data:/home/abc
+    restart: unless-stopped
