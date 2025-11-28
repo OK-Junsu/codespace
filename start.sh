@@ -35,31 +35,40 @@ if [ ! -f "$ABC_HOME/.gitconfig" ]; then
     echo "Git credential helper set to 'store'."
 fi
 
-# 2.2. [수정됨] SSH Agent 권한 및 환경 변수 설정
-# 호스트에서 마운트된 소켓 경로 (/ssh-agent)가 유효한지 확인
-if [ -S "$SSH_AUTH_SOCK" ]; then
-    echo "SSH Agent socket found at $SSH_AUTH_SOCK"
-    
-    # [해결책 1] 권한 문제 해결
-    # 소켓 파일은 root 소유이므로 abc가 접근할 수 있도록 권한을 엽니다.
-    # (주의: 호스트 파일의 권한도 변경되지만, 로컬 개발 환경에서는 허용 가능한 수준입니다)
-    chmod 666 "$SSH_AUTH_SOCK"
-    echo "Permissions for $SSH_AUTH_SOCK updated to 666."
+# 2.2. [완전 교체] SSH Agent Socat Relay 설정
+# 호스트(Root) Agent와 컨테이너(abc) 간의 UID 불일치 문제를 해결하기 위해 socat으로 중계합니다.
 
-    # [해결책 2] 환경 변수 고정 (SSH 접속 시 변수 증발 방지)
-    # .bashrc와 .profile에 강제로 경로를 지정하여 어떤 쉘에서도 인식되게 합니다.
-    # 이미 있는지 확인 후 없으면 추가
-    if ! grep -q "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" "$ABC_HOME/.bashrc"; then
+# 호스트에서 마운트된 원본 소켓
+HOST_SOCKET="/ssh-agent"
+# abc 사용자가 실제로 사용할 중계 소켓 경로
+NEW_SOCKET="/usr/local/etc/ssh-agent.sock"
+
+if [ -S "$HOST_SOCKET" ]; then
+    echo "SSH Agent socket found at $HOST_SOCKET"
+    
+    # 기존에 남아있을 수 있는 중계 소켓 삭제
+    rm -f "$NEW_SOCKET"
+
+    # [핵심] socat 실행 (백그라운드)
+    # Root 권한으로 실행되어 호스트 소켓(UID 0)과 통신하고,
+    # 생성된 소켓($NEW_SOCKET)은 abc 사용자가 접근 가능하도록 권한(user=abc)을 설정합니다.
+    echo "Starting socat relay..."
+    socat UNIX-LISTEN:$NEW_SOCKET,fork,group=abc,user=abc,mode=600 UNIX-CONNECT:$HOST_SOCKET &
+    
+    # 쉘 설정에 새로운 소켓 경로 등록
+    if ! grep -q "export SSH_AUTH_SOCK=$NEW_SOCKET" "$ABC_HOME/.bashrc"; then
         echo "" >> "$ABC_HOME/.bashrc"
-        echo "# SSH Agent forwarding" >> "$ABC_HOME/.bashrc"
-        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$ABC_HOME/.bashrc"
+        echo "# SSH Agent Relay" >> "$ABC_HOME/.bashrc"
+        echo "export SSH_AUTH_SOCK=$NEW_SOCKET" >> "$ABC_HOME/.bashrc"
         
-        # .profile에도 추가 (로그인 쉘용)
-        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$ABC_HOME/.profile"
-        echo "SSH_AUTH_SOCK exported to .bashrc and .profile"
+        echo "export SSH_AUTH_SOCK=$NEW_SOCKET" >> "$ABC_HOME/.profile"
     fi
+    
+    # 현재 스크립트 실행 환경(code-server 실행용)에도 변수 적용
+    export SSH_AUTH_SOCK="$NEW_SOCKET"
+    echo "SSH Agent relay established at $NEW_SOCKET"
 else
-    echo "WARNING: SSH Agent socket not found at $SSH_AUTH_SOCK"
+    echo "WARNING: Host SSH Agent socket not found at $HOST_SOCKET"
 fi
 
 
