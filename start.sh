@@ -35,14 +35,31 @@ if [ ! -f "$ABC_HOME/.gitconfig" ]; then
     echo "Git credential helper set to 'store'."
 fi
 
-# 2.2. SSH Agent 권한 우회 (소켓 파일 접근 권한)
-# 호스트에서 마운트된 소켓은 권한 문제로 abc가 못 읽을 수 있습니다.
-# 소켓이 존재하면, ACL이나 권한을 조정하는 것이 정석이나, 
-# 컨테이너 내부이므로 간단히 소켓의 그룹 권한을 수정하거나 확인만 합니다.
+# 2.2. [수정됨] SSH Agent 권한 및 환경 변수 설정
+# 호스트에서 마운트된 소켓 경로 (/ssh-agent)가 유효한지 확인
 if [ -S "$SSH_AUTH_SOCK" ]; then
     echo "SSH Agent socket found at $SSH_AUTH_SOCK"
-    # 소켓 파일 권한 완화 (abc가 읽고 쓸 수 있도록)
-    chmod 777 "$SSH_AUTH_SOCK" || true
+    
+    # [해결책 1] 권한 문제 해결
+    # 소켓 파일은 root 소유이므로 abc가 접근할 수 있도록 권한을 엽니다.
+    # (주의: 호스트 파일의 권한도 변경되지만, 로컬 개발 환경에서는 허용 가능한 수준입니다)
+    chmod 666 "$SSH_AUTH_SOCK"
+    echo "Permissions for $SSH_AUTH_SOCK updated to 666."
+
+    # [해결책 2] 환경 변수 고정 (SSH 접속 시 변수 증발 방지)
+    # .bashrc와 .profile에 강제로 경로를 지정하여 어떤 쉘에서도 인식되게 합니다.
+    # 이미 있는지 확인 후 없으면 추가
+    if ! grep -q "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" "$ABC_HOME/.bashrc"; then
+        echo "" >> "$ABC_HOME/.bashrc"
+        echo "# SSH Agent forwarding" >> "$ABC_HOME/.bashrc"
+        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$ABC_HOME/.bashrc"
+        
+        # .profile에도 추가 (로그인 쉘용)
+        echo "export SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$ABC_HOME/.profile"
+        echo "SSH_AUTH_SOCK exported to .bashrc and .profile"
+    fi
+else
+    echo "WARNING: SSH Agent socket not found at $SSH_AUTH_SOCK"
 fi
 
 
