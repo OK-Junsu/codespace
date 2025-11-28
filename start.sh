@@ -133,8 +133,8 @@ chown -R abc:abc "$WORKSPACE_DIR"
 # --- 5. START SERVICES ---
 
 echo "Starting code-server..."
-# [중요] SSH_AUTH_SOCK 환경 변수를 명시적으로 전달해야 합니다.
-sudo -u abc SSH_AUTH_SOCK="$SSH_AUTH_SOCK" /usr/bin/code-server --bind-addr 0.0.0.0:8080 --config "$CODE_CONFIG_DIR/config.yaml" "$WORKSPACE_DIR" &
+# 위에서 export한 SSH_AUTH_SOCK(새로운 소켓 경로)이 전달됩니다.
+sudo -E -u abc /usr/bin/code-server --bind-addr 0.0.0.0:8080 --config "$CODE_CONFIG_DIR/config.yaml" "$WORKSPACE_DIR" &
 
 echo "Starting SSH Daemon..."
 exec /usr/sbin/sshd -D

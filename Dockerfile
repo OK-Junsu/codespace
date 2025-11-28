@@ -4,7 +4,7 @@ FROM ubuntu:jammy-20251013
 # 2. Install necessary packages
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
-    && apt-get install -y openssh-server curl tar wget git nano sudo \
+    && apt-get install -y openssh-server curl tar wget git nano sudo socat \
     && mkdir -p /run/sshd \
     && chmod 0755 /run/sshd \
     && rm -rf /var/lib/apt/lists/*
