@@ -109,41 +109,45 @@ if [ -z "$CLAUDE_REAL_BIN" ]; then
     cp -a "$SKEL_DIR/.local/"* "$ABC_HOME/.local/"
 fi
 
-# --- 5. AUTOMATED GIT CLONE (NEW SECTION) ---
+# --- 5. AUTOMATED GIT CLONE (SUBDIRECTORY MODE) ---
 
 if [ -n "$GIT_REPO_URL" ]; then
-    echo "Git repository URL detected."
+    echo "Git repository URL detected: $GIT_REPO_URL"
 
-    # 이미 프로젝트가 존재하는지 확인 (.git 폴더 유무)
-    if [ -d "$WORKSPACE_DIR/.git" ]; then
-        echo "Git repository already exists in workspace. Skipping clone."
+    # 1. URL에서 프로젝트 이름(디렉토리명) 추출
+    # 예: ssh://.../codespace.git -> codespace
+    REPO_NAME=$(basename "$GIT_REPO_URL" .git)
+    TARGET_PROJECT_DIR="$WORKSPACE_DIR/$REPO_NAME"
+
+    echo "Target project directory: $TARGET_PROJECT_DIR"
+
+    # 2. 해당 프로젝트 폴더가 이미 존재하는지 확인
+    if [ -d "$TARGET_PROJECT_DIR" ]; then
+        echo "Project directory '$REPO_NAME' already exists in workspace. Skipping clone."
     else
-        # Workspace 폴더가 비어있지 않으면 clone이 실패할 수 있으므로 확인
-        # (단, .sudo_as_admin_successful 같은 숨김 파일은 무시하거나, git clone시 . 사용 고려)
+        echo "Cloning repository into subdirectory '$REPO_NAME'..."
         
-        echo "Cloning repository..."
         FINAL_REPO_URL="$GIT_REPO_URL"
 
         # HTTPS + Token 사용 시 URL 재조합
-        # (https://github.com/user/repo.git -> https://user:token@github.com/user/repo.git)
         if [[ "$GIT_REPO_URL" == https://* ]] && [ -n "$GIT_TOKEN" ] && [ -n "$GIT_USERNAME" ]; then
             CLEAN_URL="${GIT_REPO_URL#https://}"
             FINAL_REPO_URL="https://${GIT_USERNAME}:${GIT_TOKEN}@${CLEAN_URL}"
             echo "Using HTTPS with Personal Access Token."
         fi
 
-        # git clone 실행 (abc 권한으로, SSH Agent 환경변수 유지)
-        # 주의: 디렉토리가 비어있어야 하므로 . 옵션 대신 디렉토리명을 지정하거나, 
-        # 비어있는 $WORKSPACE_DIR에 clone 하도록 함.
-        
-        # 권한 확보를 위해 workspace 소유권 먼저 설정
+        # 3. Clone 실행
+        # - 부모 디렉토리(Workspace) 권한 확인
         chown abc:abc "$WORKSPACE_DIR"
         
-        # 클론 수행
-        sudo -E -u abc env GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone "$FINAL_REPO_URL" "$WORKSPACE_DIR"
+        # - Workspace로 이동 후 Clone 실행 (Git이 알아서 폴더 생성함)
+        # - 호스트 키 검사 무시 옵션 포함
+        cd "$WORKSPACE_DIR" || exit
+        
+        sudo -E -u abc env GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone "$FINAL_REPO_URL"
         
         if [ $? -eq 0 ]; then
-            echo "Git clone successful."
+            echo "Git clone successful: $TARGET_PROJECT_DIR"
         else
             echo "Git clone failed. Please check URL or credentials."
         fi

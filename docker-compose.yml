@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: support.misolves.com/ok-junsu/codespace:0.0.32
+    image: support.misolves.com/ok-junsu/codespace:0.0.34
     container_name: codespace
     ports:
       - "2222:22"   # SSH 포트
