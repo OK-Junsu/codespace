@@ -140,7 +140,7 @@ if [ -n "$GIT_REPO_URL" ]; then
         chown abc:abc "$WORKSPACE_DIR"
         
         # 클론 수행
-        sudo -E -u abc git clone "$FINAL_REPO_URL" "$WORKSPACE_DIR"
+        sudo -E -u abc env GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone "$FINAL_REPO_URL" "$WORKSPACE_DIR"
         
         if [ $? -eq 0 ]; then
             echo "Git clone successful."
