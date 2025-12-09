@@ -8,7 +8,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list \
     && sed -i 's/security.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list \
     && apt-get update \
-    && apt-get install -y openssh-server curl tar wget git nano sudo socat \
+    && apt-get install -y openssh-server curl tar wget git nano sudo socat tzdata \
     && mkdir -p /run/sshd \
     && chmod 0755 /run/sshd \
     && rm -rf /var/lib/apt/lists/*
