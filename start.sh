@@ -18,6 +18,9 @@ echo "Configuring container environment..."
 echo "Setting user 'abc' password..."
 echo "abc:$USER_PASSWORD" | chpasswd
 
+# [추가됨] sudo 안내 메시지 숨기기 (한 번도 sudo를 안 썼어도 쓴 것처럼 처리)
+touch "$ABC_HOME/.sudo_as_admin_successful"
+
 # 1.2. Workspace 디렉토리 생성
 if [ ! -d "$WORKSPACE_DIR" ]; then
     echo "Creating workspace directory: $WORKSPACE_DIR"
