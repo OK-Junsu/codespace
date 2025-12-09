@@ -3,16 +3,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: support.misolves.com/ok-junsu/codespace:0.0.23
+    image: support.misolves.com/ok-junsu/codespace:0.0.32
     container_name: codespace
     ports:
       - "2222:22"   # SSH 포트
       - "8080:8080" # Code-Server 포트
     environment:
       - USER_PASSWORD=my_ssh_password     # 호스트 암호 변경
-      - CS_PASSWORD=my_cs_password        # 비워두면 암호 없이 접속
+      - CS_PASSWORD=my_cs_password        # Code Space 암호 변경 / 비워두면 암호 없이 접속
       - WORKSPACE_DIR=/home/abc/workspace # 작업 경로 변경
       - SSH_AUTH_SOCK=/ssh-agent
+      - TZ=Asia/Seoul
+      - GIT_REPO_URL=repo_url             # SSH 와 HTTPS 모두 가능
+      - GIT_USERNAME=user_name            # HTTPS 사용시 입력
+      - GIT_TOKEN=your_pat_here           # HTTPS 사용시 입력
     volumes:
       - ./data:/home/abc
       - ${SSH_AUTH_SOCK}:/ssh-agent
