@@ -161,8 +161,11 @@ if [ -n "$GIT_REPO_URL" ]; then
         # - Workspace로 이동 후 Clone 실행 (Git이 알아서 폴더 생성함)
         # - 호스트 키 검사 무시 옵션 포함
         cd "$WORKSPACE_DIR" || exit
+
+        echo "Executing git clone..."
         
-        sudo -E -u abc env GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone "$FINAL_REPO_URL"
+        sudo -E -u abc HOME="$ABC_HOME" env GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" \
+        git -c credential.helper=store clone "$FINAL_REPO_URL"
         
         if [ $? -eq 0 ]; then
             echo "Git clone successful: $TARGET_PROJECT_DIR"
