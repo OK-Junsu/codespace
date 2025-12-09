@@ -3,7 +3,11 @@ FROM ubuntu:jammy-20251013
 
 # 2. Install necessary packages
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update \
+
+# [수정됨] Ubuntu 저장소를 Kakao Mirror로 변경하여 속도 향상 및 Hash Sum 오류 해결
+RUN sed -i 's/archive.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list \
+    && sed -i 's/security.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y openssh-server curl tar wget git nano sudo socat \
     && mkdir -p /run/sshd \
     && chmod 0755 /run/sshd \
