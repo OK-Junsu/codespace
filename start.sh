@@ -16,7 +16,9 @@ echo "Configuring container environment..."
 
 # 1.1. 사용자 암호 설정
 echo "Setting user 'abc' password..."
+set +x
 echo "abc:$USER_PASSWORD" | chpasswd
+set -x
 touch "$ABC_HOME/.sudo_as_admin_successful"
 
 # 1.2. Workspace 디렉토리 생성
@@ -76,6 +78,8 @@ if [ ! -f "$CODE_CONFIG_DIR/config.yaml" ]; then
     echo "Generating code-server config..."
     mkdir -p "$CODE_CONFIG_DIR"
     
+    set +x
+
     if [ -z "$CS_PASSWORD" ]; then
         AUTH_METHOD="none"
         PASSWORD_LINE=""
@@ -90,6 +94,9 @@ auth: $AUTH_METHOD
 $PASSWORD_LINE
 cert: false
 EOF
+
+    set -x
+    echo "Code-server configuration generated."
 fi
 
 # 4.2. Claude 설정 복구
@@ -129,6 +136,8 @@ if [ -n "$GIT_REPO_URL" ]; then
         
         FINAL_REPO_URL="$GIT_REPO_URL"
 
+        set +x
+
         # [수정됨] HTTPS + Token 사용 시: URL 변조 대신 .git-credentials 파일에 등록
         if [[ "$GIT_REPO_URL" == https://* ]] && [ -n "$GIT_TOKEN" ] && [ -n "$GIT_USERNAME" ]; then
             echo "Configuring git credentials for HTTPS..."
@@ -153,6 +162,8 @@ if [ -n "$GIT_REPO_URL" ]; then
             # 4. 보안을 위해 권한 설정 (600)
             sudo -u abc chmod 600 /home/abc/.git-credentials
         fi
+
+        set -x
 
         # 3. Clone 실행
         # - 부모 디렉토리(Workspace) 권한 확인
