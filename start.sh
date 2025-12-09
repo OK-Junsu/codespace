@@ -129,11 +129,29 @@ if [ -n "$GIT_REPO_URL" ]; then
         
         FINAL_REPO_URL="$GIT_REPO_URL"
 
-        # HTTPS + Token 사용 시 URL 재조합
+        # [수정됨] HTTPS + Token 사용 시: URL 변조 대신 .git-credentials 파일에 등록
         if [[ "$GIT_REPO_URL" == https://* ]] && [ -n "$GIT_TOKEN" ] && [ -n "$GIT_USERNAME" ]; then
-            CLEAN_URL="${GIT_REPO_URL#https://}"
-            FINAL_REPO_URL="https://${GIT_USERNAME}:${GIT_TOKEN}@${CLEAN_URL}"
-            echo "Using HTTPS with Personal Access Token."
+            echo "Configuring git credentials for HTTPS..."
+            
+            # 1. 도메인 추출 (예: https://github.com/user/repo.git -> github.com)
+            # URL에서 'https://' 제거
+            TEMP_URL="${GIT_REPO_URL#https://}"
+            # 첫 번째 '/' 앞부분(도메인)만 추출
+            GIT_DOMAIN="${TEMP_URL%%/*}"
+            
+            # 2. 저장할 인증 정보 문자열 생성 (https://user:token@domain)
+            CRED_LINE="https://${GIT_USERNAME}:${GIT_TOKEN}@${GIT_DOMAIN}"
+            
+            # 3. .git-credentials 파일에 등록 (abc 권한으로)
+            # 중복 방지를 위해 grep으로 확인 후 없으면 추가
+            sudo -u abc bash -c "touch /home/abc/.git-credentials"
+            if ! sudo -u abc grep -qF "$CRED_LINE" /home/abc/.git-credentials; then
+                sudo -u abc bash -c "echo '$CRED_LINE' >> /home/abc/.git-credentials"
+                echo "Credentials stored for $GIT_DOMAIN"
+            fi
+            
+            # 4. 보안을 위해 권한 설정 (600)
+            sudo -u abc chmod 600 /home/abc/.git-credentials
         fi
 
         # 3. Clone 실행
